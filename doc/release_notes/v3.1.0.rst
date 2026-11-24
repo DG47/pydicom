@@ -101,6 +101,10 @@ Fixes
 * Fixed :func:`~pydicom.pixels.processing.apply_color_lut` raising
   :class:`AttributeError` for missing palette LUT data; a :class:`ValueError`
   naming the missing element(s) is raised instead (:issue:`2433`).
+* Fixed :meth:`Dataset.to_json() <pydicom.dataset.Dataset.to_json>` raising
+  :class:`IndexError` for multi-valued **PN** elements with an empty value, and writing
+  empty values in multi-valued text elements as ``""`` instead of ``null`` as required
+  by :dcm:`Part 18, Annex F.2.5 <part18/sect_F.2.5.html>`.
 
 
 Enhancements

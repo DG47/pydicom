@@ -388,12 +388,18 @@ class DataElement:  # noqa: PLW1641
             json_element["Value"] = value
         elif self.VR == VR_.PN:
             if not self.is_empty:
-                elem_value = []
+                elem_value: list[dict[str, str] | None] = []
                 if self.VM > 1:
                     value = self.value
                 else:
                     value = [self.value]
                 for v in value:
+                    # empty values in a multi-valued element are null, see
+                    #   PS3.18, F.2.5
+                    if not v:
+                        elem_value.append(None)
+                        continue
+
                     comps = {"Alphabetic": v.components[0]}
                     if len(v.components) > 1:
                         comps["Ideographic"] = v.components[1]
@@ -413,7 +419,9 @@ class DataElement:  # noqa: PLW1641
                     value = self.value
                 else:
                     value = [self.value]
-                json_element["Value"] = [v for v in value]
+                json_element["Value"] = [
+                    None if isinstance(v, str) and not v else v for v in value
+                ]
         if "Value" in json_element:
             json_element["Value"] = jsonrep.convert_to_python_number(
                 json_element["Value"], self.VR

@@ -121,6 +121,23 @@ class TestPersonName:
             {"Alphabetic": "Люкceмбypг"},
         ] == ds_json["00091001"]["Value"]
 
+    def test_multi_value_with_empty_value_to_json(self):
+        """Empty values in a multi-valued PN are written as null"""
+        ds = Dataset()
+        ds.add_new(0x00091001, "PN", "Doe^John\\\\Smith")
+        ds.add_new(0x00091002, "PN", ["Doe^John", ""])
+        ds_json = ds.to_json_dict()
+        assert [
+            {"Alphabetic": "Doe^John"},
+            None,
+            {"Alphabetic": "Smith"},
+        ] == ds_json["00091001"]["Value"]
+        assert [{"Alphabetic": "Doe^John"}, None] == ds_json["00091002"]["Value"]
+
+        ds = Dataset.from_json(ds.to_json())
+        assert ["Doe^John", "", "Smith"] == ds[0x00091001].value
+        assert ["Doe^John", ""] == ds[0x00091002].value
+
     def test_dataelem_from_json(self):
         tag = 0x0080090
         vr = "PN"
@@ -344,6 +361,30 @@ class TestEmptyJsonValues:
         assert json.loads(result) == {"00091001": {"vr": vr, "Value": [1, None, 2]}}
         restored = Dataset.from_json(result)
         assert restored[0x00091001].value == [1, None, 2]
+        assert restored[0x00091001].VM == 3
+
+    @pytest.mark.parametrize(
+        "vr, value",
+        [
+            ("CS", "ABC"),
+            ("LO", "Foo"),
+            ("SH", "Bar"),
+            ("UI", "1.2.3"),
+            ("DA", "20240101"),
+        ],
+    )
+    def test_multivalue_text_to_json(self, vr, value):
+        """Empty values in a multi-valued text element are written as null"""
+        ds = Dataset()
+        ds.add_new(0x00091001, vr, [value, "", value])
+
+        result = ds.to_json()
+
+        assert json.loads(result) == {
+            "00091001": {"vr": vr, "Value": [value, None, value]}
+        }
+        restored = Dataset.from_json(result)
+        assert restored[0x00091001].value == [value, "", value]
         assert restored[0x00091001].VM == 3
 
     @pytest.mark.parametrize("vr", ["DS", "IS"])
